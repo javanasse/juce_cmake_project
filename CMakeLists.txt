@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 # Change to your project name
-project(SimpleJucePluginTemplate VERSION 0.0.1)
+project(IAS_LPC VERSION 0.0.1)
 
 
 set(CMAKE_CXX_STANDARD 17)
@@ -28,16 +28,18 @@ CPMAddPackage(
 )
 
 # Make sure you include any new source files here
-set(SourceFiles
+set(source_files
         src/PluginEditor.cpp
-        src/PluginEditor.h
+        src/PluginEditor.hpp
         src/PluginProcessor.cpp
-        src/PluginProcessor.h
+        src/PluginProcessor.hpp
+        src/lpc/lpc.hpp
+        src/lpc/lpc.cpp
 )
 
 # Change these to your own preferences
 juce_add_plugin(${PROJECT_NAME}
-        COMPANY_NAME infiniteseriesaudio
+        COMPANY_NAME "Infinite Series Audio"
         IS_SYNTH FALSE
         NEEDS_MIDI_INPUT FALSE
         NEEDS_MIDI_OUTPUT FALSE
@@ -48,14 +50,14 @@ juce_add_plugin(${PROJECT_NAME}
         PLUGIN_MANUFACTURER_CODE Isa0
         PLUGIN_CODE Reg0
         FORMATS VST3 AU Standalone
-        PRODUCT_NAME "IAS_XrossSynthesisProcessor"        
+        PRODUCT_NAME "IAS_LPC"        
 )
 
-# How we want our SourceFiles to appear in our IDE
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SourceFiles})
+# How we want our source_files to appear in our IDE
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${source_files})
 
-# Make the SourceFiles buildable
-target_sources(${PROJECT_NAME} PRIVATE ${SourceFiles})
+# Make the source_files buildable
+target_sources(${PROJECT_NAME} PRIVATE ${source_files})
 
 # These are some toggleable options from the JUCE CMake API
 target_compile_definitions(${PROJECT_NAME}
@@ -85,8 +87,8 @@ target_link_libraries(${PROJECT_NAME}
 
 # Link to additional libraries
 find_package(FFTW3 REQUIRED)
-target_link_libraries(${PROJECT_NAME}
-        PUBLIC
-        fftw::fftw
-)
+# target_link_libraries(${PROJECT_NAME}
+#         PUBLIC
+#         fftw::fftw
+# )
 

@@ -1,17 +1,45 @@
-#include "PluginProcessor.h"
-#include "PluginEditor.h"
+#include "PluginProcessor.hpp"
+#include "PluginEditor.hpp"
 
 //==============================================================================
 AudioPluginAudioProcessor::AudioPluginAudioProcessor()
      : AudioProcessor (BusesProperties()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+                       .withInput  ("Input",  juce::AudioChannelSet::mono(), true)
                       #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+                       .withOutput ("Output", juce::AudioChannelSet::mono(), true)
                      #endif
-                       )
+                       ),
+    parameters(*this, nullptr, juce::Identifier("IAS_LPC"), 
+        {
+            std::make_unique<juce::AudioParameterInt>(
+                "numCoefficients",
+                "Num Coefficients",
+                1, 
+                70,
+                8
+            ),
+            std::make_unique<juce::AudioParameterBool>(
+                "whisperFlag",
+                "Whisper",
+                false,
+                juce::AudioParameterBoolAttributes().withStringFromValueFunction ([] (auto x, auto) { return x ? "On" : "Off"; })
+                                                        .withLabel ("enabled")
+            )
+        }
+    )
 {
+    // initialize parameters
+    numCoefficientsParameter = parameters.getRawParameterValue("numCoefficients");
+    whisperFlagParameter = parameters.getRawParameterValue("whisperFlag");
+
+    // initialize lpc data
+    this->lpc_instance = lpc_create();
+
+    // intialize audio buffer
+    inputBuffer.setSize(1, bufferSize);
+    outputBuffer.setSize(1, bufferSize);
 }
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
@@ -107,8 +135,7 @@ bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layou
     // In this template code we only support mono or stereo.
     // Some plugin hosts, such as certain GarageBand versions, will only
     // load plugins that support stereo bus layouts.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono())
         return false;
 
     // This checks if the input layout matches the output layout
@@ -130,27 +157,84 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    // In case we have more outputs than inputs, this code clears any output
-    // channels that didn't contain input data, (because these aren't
-    // guaranteed to be empty - they may contain garbage).
-    // This is here to avoid people getting screaming feedback
-    // when they first compile a plugin, but obviously you don't need to keep
-    // this code if your algorithm always overwrites all the output channels.
+    // clear unused input channels
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    // get parameters for block
+    const uint numCoefficients = static_cast<uint>(*numCoefficientsParameter);
+    bool whisperFlag = static_cast<bool>(*whisperFlagParameter);
+
+    // loop over samples
+    for (size_t sample = 0; sample < buffer.getNumSamples(); sample++)
     {
-        auto* channelData = buffer.getWritePointer (channel);
-        juce::ignoreUnused (channelData);
-        // ..do something to the data...
+        inputBuffer.setSample(0, writePosition, buffer.getSample(0, sample));
+        
+        // process inputBuffer when full
+        if (writePosition == 0)
+        {
+            // lpc data
+            float coefficients[numCoefficients];
+            float power;
+            float pitch;
+            int glottal = 0;
+
+            lpc_analyze(this->lpc_instance, 
+                inputBuffer.getWritePointer(0), 
+                inputBuffer.getNumSamples(), 
+                coefficients, 
+                numCoefficients, 
+                &power, 
+                &pitch
+            );
+
+            if (whisperFlag)
+            {
+                pitch = 0.0f;
+            }
+            // else
+            // {
+            //     // juce::MidiMessageMetadata firstMessage = *midiMessages.begin();
+            // }
+
+            // clear will be the window of life
+            lpc_synthesize(this->lpc_instance, 
+                outputBuffer.getWritePointer(0), 
+                outputBuffer.getNumSamples(), 
+                coefficients, 
+                numCoefficients, 
+                power, 
+                pitch, 
+                glottal
+            );
+        }
+
+        // write output
+        buffer.setSample(0, sample, outputBuffer.getSample(0, writePosition));
+
+        // increment write position
+        writePosition = (writePosition + 1) % bufferSize;
     }
+
+
+    
+
+    
+    
+
+
+    // // This is the place where you'd normally do the guts of your plugin's
+    // // audio processing...
+    // // Make sure to reset the state if your inner loop is processing
+    // // the samples and the outer loop is handling the channels.
+    // // Alternatively, you can process the samples with the channels
+    // // interleaved by keeping the same state.
+    // for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    // {
+    //     auto* channelData = buffer.getWritePointer (channel);
+    //     juce::ignoreUnused (channelData);
+    //     // ..do something to the data...
+    // }
 }
 
 //==============================================================================
