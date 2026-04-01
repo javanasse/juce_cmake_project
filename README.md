@@ -1,5 +1,13 @@
 # SimpleJucePluginTemplate
 
+Simple audio plugin template using JUCE, CMake and Conan. 
+
+## Dependency Management with Conan
+
+Dependencies are managed using the `conanfile.py`. I've found this to be the most elegant package manager for C++, and many big and well maintained packages are represented in the (Conan Center)[https://conan.io/center].
+
+This project is built using CMake. The dependency on JUCE is collected using `FetchContent`.
+
 ## Installation
 
 You'll need to build `fftw` the first time you install it:
