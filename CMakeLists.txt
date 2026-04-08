@@ -8,24 +8,26 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_XCODE_GENERATE_SCHEME OFF)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# We're going to use CPM as our package manager to bring in JUCE
-# Check to see if we have CPM installed already.  Bring it in if we don't.
-set(CPM_DOWNLOAD_VERSION 0.34.0)
-set(CPM_DOWNLOAD_LOCATION "${CMAKE_BINARY_DIR}/cmake/CPM_${CPM_DOWNLOAD_VERSION}.cmake")
+add_subdirectory(libs/JUCE)
 
-if (NOT EXISTS ${CPM_DOWNLOAD_LOCATION})
-    message(STATUS "Downloading CPM.cmake to ${CPM_DOWNLOAD_LOCATION}")
-    file(DOWNLOAD https://github.com/cpm-cmake/CPM.cmake/releases/download/v${CPM_DOWNLOAD_VERSION}/CPM.cmake ${CPM_DOWNLOAD_LOCATION})
-endif ()
+# # We're going to use CPM as our package manager to bring in JUCE
+# # Check to see if we have CPM installed already.  Bring it in if we don't.
+# set(CPM_DOWNLOAD_VERSION 0.34.0)
+# set(CPM_DOWNLOAD_LOCATION "${CMAKE_BINARY_DIR}/cmake/CPM_${CPM_DOWNLOAD_VERSION}.cmake")
 
-include(${CPM_DOWNLOAD_LOCATION})
+# if (NOT EXISTS ${CPM_DOWNLOAD_LOCATION})
+#     message(STATUS "Downloading CPM.cmake to ${CPM_DOWNLOAD_LOCATION}")
+#     file(DOWNLOAD https://github.com/cpm-cmake/CPM.cmake/releases/download/v${CPM_DOWNLOAD_VERSION}/CPM.cmake ${CPM_DOWNLOAD_LOCATION})
+# endif ()
 
-# Bring in JUCE locally
-CPMAddPackage(
-    NAME juce
-    GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-    GIT_TAG origin/master
-)
+# include(${CPM_DOWNLOAD_LOCATION})
+
+# # Bring in JUCE locally
+# CPMAddPackage(
+#     NAME juce
+#     GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+#     GIT_TAG origin/master
+# )
 
 # Make sure you include any new source files here
 set(source_files
@@ -35,6 +37,7 @@ set(source_files
         src/PluginProcessor.hpp
         src/lpc/lpc.hpp
         src/lpc/lpc.cpp
+        src/Analyser.h
 )
 
 # Change these to your own preferences
@@ -47,7 +50,7 @@ juce_add_plugin(${PROJECT_NAME}
         EDITOR_WANTS_KEYBOARD_FOCUS FALSE
         JUCE_VST3_CAN_REPLACE_VST2 FALSE
         COPY_PLUGIN_AFTER_BUILD TRUE
-        PLUGIN_MANUFACTURER_CODE Isa0
+        PLUGIN_MANUFACTURER_CODE Isa1
         PLUGIN_CODE Reg0
         FORMATS VST3 AU Standalone
         PRODUCT_NAME "IAS_LPC"        
@@ -86,7 +89,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 # Link to additional libraries
-find_package(FFTW3 REQUIRED)
+# find_package(FFTW3 REQUIRED)
 # target_link_libraries(${PROJECT_NAME}
 #         PUBLIC
 #         fftw::fftw
