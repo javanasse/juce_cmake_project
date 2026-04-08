@@ -5,6 +5,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include "lpc/lpc.hpp"
+#include "Analyser.h"
 
 //==============================================================================
 class AudioPluginAudioProcessor final : public juce::AudioProcessor
@@ -48,6 +49,10 @@ public:
 
     juce::AudioProcessorValueTreeState parameters;
 
+    // spectrogram
+    void createAnalyserPlot (juce::Path& p, const juce::Rectangle<int> bounds, float minFreq);
+    bool checkForNewAnalyserData();
+
 private:
     //==============================================================================
 
@@ -60,6 +65,9 @@ private:
     juce::AudioBuffer<float> inputBuffer;
     juce::AudioBuffer<float> outputBuffer;
     size_t writePosition {0};
+
+    // background spectrogram analyzer thread
+    Analyser<float> outputAnalyser; 
     
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPluginAudioProcessor)

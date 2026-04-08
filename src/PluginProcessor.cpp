@@ -44,6 +44,7 @@ AudioPluginAudioProcessor::AudioPluginAudioProcessor()
 
 AudioPluginAudioProcessor::~AudioPluginAudioProcessor()
 {
+    outputAnalyser.stopThread (1000);
 }
 
 //==============================================================================
@@ -117,12 +118,15 @@ void AudioPluginAudioProcessor::prepareToPlay (double sampleRate, int samplesPer
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
     juce::ignoreUnused (sampleRate, samplesPerBlock);
+
+    outputAnalyser.setupAnalyser (int (sampleRate), float (sampleRate));
 }
 
 void AudioPluginAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
+    outputAnalyser.stopThread (1000);
 }
 
 bool AudioPluginAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -218,23 +222,9 @@ void AudioPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
 
     
-
+    outputAnalyser.addAudioData (buffer, 0, getTotalNumOutputChannels());
     
     
-
-
-    // // This is the place where you'd normally do the guts of your plugin's
-    // // audio processing...
-    // // Make sure to reset the state if your inner loop is processing
-    // // the samples and the outer loop is handling the channels.
-    // // Alternatively, you can process the samples with the channels
-    // // interleaved by keeping the same state.
-    // for (int channel = 0; channel < totalNumInputChannels; ++channel)
-    // {
-    //     auto* channelData = buffer.getWritePointer (channel);
-    //     juce::ignoreUnused (channelData);
-    //     // ..do something to the data...
-    // }
 }
 
 //==============================================================================
@@ -262,6 +252,16 @@ void AudioPluginAudioProcessor::setStateInformation (const void* data, int sizeI
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
     juce::ignoreUnused (data, sizeInBytes);
+}
+
+void AudioPluginAudioProcessor::createAnalyserPlot (juce::Path& p, const juce::Rectangle<int> bounds, float minFreq)
+{
+        outputAnalyser.createPath (p, bounds.toFloat(), minFreq);
+}
+
+bool AudioPluginAudioProcessor::checkForNewAnalyserData()
+{
+    return outputAnalyser.checkForNewData();
 }
 
 //==============================================================================

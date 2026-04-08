@@ -12,7 +12,7 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     // editor's size to whatever you need it to be.
 
     addAndMakeVisible(numCoefficientsSlider);
-    numCoefficientsSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    numCoefficientsSlider.setSliderStyle(juce::Slider::LinearHorizontal);
     numCoefficientsSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 40, 15);
     numCoefficientsSlider.addListener(this);
 
@@ -25,6 +25,8 @@ AudioPluginAudioProcessorEditor::AudioPluginAudioProcessorEditor (AudioPluginAud
     whisperButton.addListener(this);
 
     setSize (400, 300);
+
+    startTimerHz(30);
 }
 
 AudioPluginAudioProcessorEditor::~AudioPluginAudioProcessorEditor()
@@ -51,11 +53,11 @@ void AudioPluginAudioProcessorEditor::paint (juce::Graphics& g)
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
 
-    // g.setColour (juce::Colours::white);
-    // g.setFont (15.0f);
-    // g.drawFittedText ("Hello World!", getLocalBounds(), juce::Justification::centred, 1);
-
-    // processorRef.parameters.get
+    processorRef.createAnalyserPlot(spectrogramPath, spectrogramBounds.reduced(4), 20.0f);
+    g.drawRect(spectrogramBounds.reduced(3));
+    g.setColour (juce::Colours::antiquewhite);
+    g.drawFittedText ("Output", spectrogramBounds.reduced (8), juce::Justification::topRight, 1);
+    g.strokePath (spectrogramPath, juce::PathStrokeType (1.0));
 }
 
 void AudioPluginAudioProcessorEditor::resized()
@@ -64,4 +66,14 @@ void AudioPluginAudioProcessorEditor::resized()
     numCoefficientsSlider.setBounds(sliderBuffer, 20, getWidth() - sliderBuffer - 10, 100);
 
     whisperButton.setBounds(100, 100, 100, 100);
+
+    spectrogramBounds.setBounds(getWidth() - 100, getHeight() - 100, 100, 100);
+}
+
+void AudioPluginAudioProcessorEditor::timerCallback()
+{
+    if (processorRef.checkForNewAnalyserData())
+    {
+        repaint (spectrogramBounds);
+    }
 }
